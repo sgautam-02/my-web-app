@@ -3,23 +3,25 @@ name: Deploy to Render
 on:
   push:
     branches:
-      - main  # Change this if your branch name is different
+      - main  # Change if your main branch is different
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Debug Docker Secrets
         run: |
           echo "DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}"
           echo "DOCKERHUB_TOKEN is set: ${{ secrets.DOCKERHUB_TOKEN != '' }}"
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure Docker Credentials
+        run: |
+          mkdir -p ~/.docker
+          echo '{ "auths": { "https://index.docker.io/v1/": { "auth": "'$(echo -n "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" | base64)'" } } }' > ~/.docker/config.json
 
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/my-web-app .
